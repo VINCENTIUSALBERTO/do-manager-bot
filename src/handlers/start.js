@@ -13,7 +13,7 @@ Untuk memulai, saya membutuhkan *Personal Access Token* \\(PAT\\) dari akun Digi
 2\\. Klik *Generate New Token* lalu pilih opsi *Personal access token*\\.
 3\\. Berikan nama token pada kolom *Token name*, misalnya: \`telegram\\-bot\`
 4\\. Tentukan batas waktu kedaluwarsa \\(*Expiration*\\) sesuai keinginan Anda\\.
-5\\. Pada bagian *Select Scopes*, pastikan Anda mencentang akses *Write* \\(akses *Read* akan otomatis tercentang bersamaan dengan Write\\)\\.
+5\\. Pada bagian *Select Scopes*, Disarankan pilih *Full Access* supaya lebih mudah atau *Custom Scopes* untuk mengatur izinnya sendiri\\.
 6\\. Klik tombol *Generate Token*\\.
 7\\. Salin token yang muncul \\(token hanya ditampilkan _sekali saja_ oleh DigitalOcean\\)\\.
 8\\. Kirim/Paste token tersebut ke chat ini sebagai pesan berikutnya\\.
@@ -32,7 +32,7 @@ Bot ini membantu Anda mengelola VPS DigitalOcean langsung dari Telegram dengan m
 
 *🚀 1\\. Menghubungkan Akun DigitalOcean:*
 1\\. Masuk ke akun DO di https://cloud\\.digitalocean\\.com/account/api/tokens
-2\\. Buat *Personal Access Token* baru \\(pastikan memiliki scope read & write\\)
+2\\. Buat *Personal Access Token* baru \\(Disarankan pilih *Full Access* supaya lebih mudah atau *Custom Scopes* untuk mengatur izinnya sendiri\\)
 3\\. Kirim token tersebut ke bot ini\\. Data token akan dienkripsi dengan aman\\.
 
 *💻 2\\. Membuat VPS Baru:*
