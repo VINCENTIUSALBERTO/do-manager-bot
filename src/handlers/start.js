@@ -25,6 +25,46 @@ To get started I need a *Personal Access Token* \\(PAT\\) from your DigitalOcean
 
 🔐 _Your token is encrypted with AES\\-256\\-GCM before it touches the database — only this bot can read it back\\._`;
 
+const HELP_TUTORIAL = `*📖 Panduan & Tutorial Penggunaan Bot*
+
+Bot ini membantu Anda mengelola VPS DigitalOcean langsung dari Telegram dengan mudah dan aman\\.
+
+*⚙️ Perintah Utama:*
+• /start \\- Buka dashboard utama bot
+• /accounts \\- Tampilkan daftar akun DigitalOcean Anda
+• /cancel \\- Batalkan proses aktif \\(seperti pembuatan VPS\\)
+• /help \\- Tampilkan panduan ini
+
+*🚀 1\\. Menghubungkan Akun DigitalOcean:*
+1\\. Masuk ke akun DO di https://cloud\\.digitalocean\\.com/account/api/tokens
+2\\. Buat *Personal Access Token* baru \\(pastikan memiliki scope read & write\\)
+3\\. Kirim token tersebut ke bot ini\\. Data token akan dienkripsi dengan aman\\.
+
+*💻 2\\. Membuat VPS Baru:*
+1\\. Klik *🚀 Create VPS* dari Dashboard
+2\\. Pilih *Region* \\(lokasi server\\)
+3\\. Pilih tipe OS \\(Distribution\\) atau Marketplace App
+4\\. Pilih spesifikasi \\(Regular, AMD, atau Intel\\) dan ukuran plan
+5\\. Tentukan metode akses: random password, custom password, atau SSH Key
+6\\. Tentukan *Hostname* dan *Masa Aktif* VPS \\(dalam hari, ketik \`0\` untuk tanpa batas\\)
+7\\. Konfirmasi detail pembuatan VPS\\.
+
+*🛠 3\\. Mengelola VPS & Power Control:*
+• *Reboot:* Menyalakan ulang VPS
+• *Power On / Off:* Menyalakan/mematikan VPS secara dinamis \\(tombol berubah otomatis sesuai status VPS\\)
+• *Destroy:* Menghapus VPS permanen \\(tindakan ini tidak bisa dibatalkan\\)
+• *Rebuild:* Menginstall ulang OS tanpa mengubah IP address VPS
+• *Show Password:* Menampilkan password root tersimpan \\(pesan password otomatis dihapus dalam 60 detik\\)
+
+*📅 4\\. Masa Aktif & Grace Period:*
+• *Sisa Masa Aktif* akan ditampilkan pada halaman info VPS secara detail dalam Waktu Indonesia Barat \\(WIB\\)\\.
+• Tombol *📅 Perpanjang Masa Aktif* dapat digunakan kapan saja untuk menambah masa aktif VPS\\.
+• Jika VPS mencapai tanggal expired, VPS *tidak langsung dihapus*\\. Bot akan mematikan VPS \\(*Power Off*\\) dan memberikan masa tenggang selama *7 hari*\\.
+• Selama 7 hari tersebut, Anda bisa memperpanjang masa aktif untuk menyalakan kembali VPS\\.
+• Jika dalam 7 hari tidak diperpanjang, VPS akan dihapus otomatis secara permanen\\.
+
+_Butuh bantuan lebih lanjut? Silakan ketik /start untuk kembali ke dashboard utama\\._`;
+
 export function setupStart(bot) {
   bot.command('start', async (ctx) => {
     const accounts = await listAccounts(ctx.from.id);
@@ -54,13 +94,48 @@ export function setupStart(bot) {
   });
 
   bot.command('help', async (ctx) => {
-    await ctx.reply(
+    const accounts = await listAccounts(ctx.from.id);
+    const kb = Markup.inlineKeyboard([
       [
-        '/start – open or refresh the dashboard',
-        '/accounts – list your DigitalOcean accounts',
-        '/cancel – cancel the current flow (e.g. VPS creation)',
-      ].join('\n'),
-    );
+        Markup.button.callback(
+          '⬅️ Menu Utama',
+          accounts.length > 0
+            ? pack('acct', 'open', ctx.session.activeAccountId || String(accounts[0]._id))
+            : 'vps:cancel',
+        ),
+      ],
+    ]);
+    await ctx.replyWithMarkdownV2(HELP_TUTORIAL, {
+      link_preview_options: { is_disabled: true },
+      ...kb,
+    });
+  });
+
+  bot.action('help:show', async (ctx) => {
+    await ctx.answerCbQuery();
+    const accounts = await listAccounts(ctx.from.id);
+    const kb = Markup.inlineKeyboard([
+      [
+        Markup.button.callback(
+          '⬅️ Kembali',
+          accounts.length > 0
+            ? pack('acct', 'open', ctx.session.activeAccountId || String(accounts[0]._id))
+            : 'vps:cancel',
+        ),
+      ],
+    ]);
+    try {
+      await ctx.editMessageText(HELP_TUTORIAL, {
+        parse_mode: 'MarkdownV2',
+        link_preview_options: { is_disabled: true },
+        ...kb,
+      });
+    } catch {
+      await ctx.replyWithMarkdownV2(HELP_TUTORIAL, {
+        link_preview_options: { is_disabled: true },
+        ...kb,
+      });
+    }
   });
 
   bot.command('cancel', async (ctx) => {

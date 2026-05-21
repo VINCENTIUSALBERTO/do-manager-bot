@@ -8,6 +8,15 @@ export function escapeMd(input) {
   return str.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, '\\$1');
 }
 
+/**
+ * Escapes a string for use INSIDE Telegram MarkdownV2 code/pre blocks (```code``` or `code`).
+ * Only backticks and backslashes need to be escaped inside code blocks.
+ */
+export function escapeMdCode(input) {
+  if (input === null || input === undefined) return '';
+  return String(input).replace(/([`\\])/g, '\\$1');
+}
+
 export function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -55,4 +64,69 @@ export function regionFlag(slug) {
   };
   const key = slug.replace(/\d+$/, '').toLowerCase();
   return map[key] ?? '🌐';
+}
+
+export function formatIndoDate(dateObj) {
+  const INDO_MONTHS = [
+    'Januari',
+    'Februari',
+    'Maret',
+    'April',
+    'Mei',
+    'Juni',
+    'Juli',
+    'Agustus',
+    'September',
+    'Oktober',
+    'November',
+    'Desember',
+  ];
+  const wibTime = new Date(dateObj.getTime() + 7 * 60 * 60 * 1000);
+  const day = wibTime.getUTCDate();
+  const month = INDO_MONTHS[wibTime.getUTCMonth()];
+  const year = wibTime.getUTCFullYear();
+  const hours = String(wibTime.getUTCHours()).padStart(2, '0');
+  const minutes = String(wibTime.getUTCMinutes()).padStart(2, '0');
+  return `${day} ${month} ${year} (${hours}:${minutes} WIB)`;
+}
+
+export function getRemainingTimeText(expiresAt) {
+  const diffMs = new Date(expiresAt).getTime() - Date.now();
+  if (diffMs <= 0) {
+    const graceEndMs = new Date(expiresAt).getTime() + 7 * 24 * 60 * 60 * 1000 - Date.now();
+    if (graceEndMs <= 0) return 'Expired (Sedang dihapus)';
+
+    const days = Math.floor(graceEndMs / (24 * 60 * 60 * 1000));
+    const hours = Math.floor((graceEndMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const parts = [];
+    if (days > 0) parts.push(`${days} hari`);
+    if (hours > 0) parts.push(`${hours} jam`);
+    return `Expired (Masa tenggang: sisa ${parts.join(' ') || 'kurang dari 1 jam'})`;
+  }
+
+  const days = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  const hours = Math.floor((diffMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+  const parts = [];
+  if (days > 0) parts.push(`${days} hari`);
+  if (hours > 0) parts.push(`${hours} jam`);
+  return parts.join(' ') || 'kurang dari 1 jam';
+}
+
+export function formatRegionName(slug) {
+  if (!slug || typeof slug !== 'string') return '—';
+  const flag = regionFlag(slug);
+  const names = {
+    sgp: 'Singapura',
+    nyc: 'New York, USA',
+    sfo: 'San Francisco, USA',
+    ams: 'Amsterdam, Netherlands',
+    fra: 'Frankfurt, Germany',
+    tor: 'Toronto, Canada',
+    blr: 'Bangalore, India',
+    lon: 'London, UK',
+    syd: 'Sydney, Australia',
+  };
+  const key = slug.replace(/\d+$/, '').toLowerCase();
+  const name = names[key] ?? 'Global';
+  return `${flag} ${name} (${slug})`;
 }

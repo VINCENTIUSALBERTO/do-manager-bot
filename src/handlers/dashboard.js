@@ -1,18 +1,21 @@
 import { Markup } from 'telegraf';
 
 import { logger } from '../logger.js';
-import { getAccount, listAccounts, refreshAccountStats } from '../services/accountService.js';
+import { Droplet } from '../models/Droplet.js';
+import {
+  getAccount,
+  listAccounts,
+  refreshAccountStats,
+  deleteAccount,
+} from '../services/accountService.js';
 import { pack } from '../utils/callbacks.js';
-import { escapeMd, formatMoney } from '../utils/format.js';
+import { escapeMd } from '../utils/format.js';
 
 function buildDashboardText(account) {
   const lines = [
-    `*${escapeMd(account.label)}*`,
+    `*Account Information*`,
     '',
-    `👤 *Name:* ${escapeMd(account.label)}`,
     `📧 *Email:* ${escapeMd(account.doEmail ?? '—')}`,
-    `💰 *Balance:* ${escapeMd(formatMoney(account.balance ?? 0))}`,
-    `📊 *MTD usage:* ${escapeMd(formatMoney(account.monthUsage ?? 0))}`,
     `🖥 *Droplets:* ${escapeMd(`${account.dropletCount ?? 0}/${account.dropletLimit ?? 0}`)}`,
   ];
   if (account.lastSyncedAt) {
@@ -31,6 +34,10 @@ function dashboardKeyboard(account) {
     [
       Markup.button.callback('🔄 Refresh', pack('acct', 'refresh', String(account._id))),
       Markup.button.callback('🔁 Switch / Add', pack('acct', 'switch')),
+    ],
+    [
+      Markup.button.callback('📖 Bantuan', pack('help', 'show')),
+      Markup.button.callback('🗑 Hapus Akun', pack('acct', 'del', String(account._id))),
     ],
   ]);
 }
@@ -106,6 +113,53 @@ export function setupDashboard(bot) {
     await ctx.reply(
       'Send me the DigitalOcean Personal Access Token for the new account. Send /cancel to abort.',
     );
+  });
+
+  bot.action(/^acct:del:(.+)$/, async (ctx) => {
+    const accountId = ctx.match[1];
+    const account = await getAccount(ctx.from.id, accountId);
+    if (!account) return ctx.answerCbQuery('Account not found.');
+    await ctx.answerCbQuery();
+    const kb = Markup.inlineKeyboard([
+      [
+        Markup.button.callback('✅ Ya, hapus akun', pack('acct', 'delyes', String(account._id))),
+        Markup.button.callback('❌ Batal', pack('acct', 'open', String(account._id))),
+      ],
+    ]);
+    await ctx.reply(
+      `Konfirmasi: hapus akun *${escapeMd(account.label)}* dari bot?\n_\\(VPS di DigitalOcean tidak akan terhapus\\)_`,
+      {
+        parse_mode: 'MarkdownV2',
+        ...kb,
+      },
+    );
+  });
+
+  bot.action(/^acct:delyes:(.+)$/, async (ctx) => {
+    const accountId = ctx.match[1];
+    await deleteAccount(ctx.from.id, accountId);
+    await Droplet.deleteMany({ accountId, telegramId: ctx.from.id }).exec();
+
+    if (ctx.session.activeAccountId === accountId) {
+      ctx.session.activeAccountId = null;
+    }
+
+    await ctx.answerCbQuery('Akun dihapus');
+    try {
+      ctx.deleteMessage().catch(() => {});
+    } catch {
+      /* ignore */
+    }
+
+    await ctx.reply('🗑 Akun berhasil dihapus dari kelola bot.');
+    const accounts = await listAccounts(ctx.from.id);
+    if (accounts.length) {
+      await renderAccountList(ctx, accounts);
+    } else {
+      await ctx.reply(
+        'Kamu tidak memiliki akun DigitalOcean yang dikelola. Ketik /start untuk menambahkan.',
+      );
+    }
   });
 
   bot.command('accounts', async (ctx) => {

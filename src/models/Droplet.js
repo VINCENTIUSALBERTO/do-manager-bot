@@ -22,6 +22,7 @@ const DropletSchema = new mongoose.Schema(
     destroyedAt: { type: Date },
     autoDestroy: { type: Boolean, default: true },
     notifiedExpiringSoon: { type: Boolean, default: false },
+    notifiedExpired: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

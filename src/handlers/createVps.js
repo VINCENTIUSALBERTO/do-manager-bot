@@ -5,7 +5,7 @@ import { Droplet } from '../models/Droplet.js';
 import { clientFor, getAccount } from '../services/accountService.js';
 import { encrypt, generateStrongPassword } from '../services/crypto.js';
 import { pack } from '../utils/callbacks.js';
-import { escapeMd, regionFlag } from '../utils/format.js';
+import { escapeMd, escapeMdCode, regionFlag } from '../utils/format.js';
 import { chunk } from '../utils/keyboards.js';
 
 import { renderDashboard } from './dashboard.js';
@@ -88,7 +88,7 @@ async function showRegion(ctx, account, page = 0) {
 async function showImageType(ctx) {
   const flow = ensureFlow(ctx);
   flow.step = 'imageType';
-  const text = `*Step 2/6 · Image*\nRegion: \`${escapeMd(flow.selection.region)}\`\n\nPilih sumber image:`;
+  const text = `*Step 2/6 · Image*\nRegion: \`${escapeMdCode(flow.selection.region)}\`\n\nPilih sumber image:`;
   const kb = Markup.inlineKeyboard([
     [
       Markup.button.callback('🐧 OS / Distribution', pack('vps', 'itype', 'distribution')),
@@ -167,7 +167,7 @@ async function showImages(ctx, account, page = 0) {
 async function showSpecType(ctx) {
   const flow = ensureFlow(ctx);
   flow.step = 'specType';
-  const text = `*Step 3/6 · Spec family*\nImage: \`${escapeMd(flow.selection.image?.slug ?? '—')}\`\n\nPilih tipe spesifikasi:`;
+  const text = `*Step 3/6 · Spec family*\nImage: \`${escapeMdCode(flow.selection.image?.slug ?? '—')}\`\n\nPilih tipe spesifikasi:`;
   const kb = Markup.inlineKeyboard([
     [
       Markup.button.callback('💧 Regular', pack('vps', 'spec', 'regular')),
@@ -345,14 +345,14 @@ function buildConfirmText(flow, sizeInfo) {
   return [
     '*Konfirmasi VPS*',
     '',
-    `${escapeMd('Hostname:')} \`${escapeMd(flow.selection.hostname)}\``,
-    `${escapeMd('Region:')} \`${escapeMd(flow.selection.region)}\``,
-    `${escapeMd('Image:')} \`${escapeMd(flow.selection.image.slug)}\``,
-    `${escapeMd('Size:')} \`${escapeMd(flow.selection.size)}\``,
+    `${escapeMd('Hostname:')} \`${escapeMdCode(flow.selection.hostname)}\``,
+    `${escapeMd('Region:')} \`${escapeMdCode(flow.selection.region)}\``,
+    `${escapeMd('Image:')} \`${escapeMdCode(flow.selection.image.slug)}\``,
+    `${escapeMd('Size:')} \`${escapeMdCode(flow.selection.size)}\``,
     sizeInfo
       ? escapeMd(
-          `Spec: ${sizeInfo.vcpus} vCPU · ${Math.round(sizeInfo.memory / 1024)} GB RAM · ${sizeInfo.disk} GB disk`,
-        )
+        `Spec: ${sizeInfo.vcpus} vCPU · ${Math.round(sizeInfo.memory / 1024)} GB RAM · ${sizeInfo.disk} GB disk`,
+      )
       : '',
     sizeInfo ? escapeMd(`Harga: $${sizeInfo.priceMonthly}/bulan`) : '',
     escapeMd(`Masa aktif: ${lifetimeText}`),
@@ -439,7 +439,7 @@ async function commitCreate(ctx, account) {
         undefined,
         `❌ Gagal membuat VPS: ${err.message}`,
       )
-      .catch(() => {});
+      .catch(() => { });
     return;
   }
 
@@ -462,23 +462,23 @@ async function commitCreate(ctx, account) {
     autoDestroy: Boolean(expiresAt),
   });
 
-  await ctx.telegram.deleteMessage(ctx.chat.id, waiting.message_id).catch(() => {});
+  await ctx.telegram.deleteMessage(ctx.chat.id, waiting.message_id).catch(() => { });
 
   const detailLines = [
     '*✅ VPS berhasil dibuat\\!*',
     '',
-    `Hostname: \`${escapeMd(droplet.name)}\``,
-    `IP: \`${escapeMd(ipv4 ?? '—')}\``,
-    `Region: \`${escapeMd(droplet.region?.slug ?? '—')}\``,
-    `Size: \`${escapeMd(droplet.size_slug ?? '—')}\``,
-    `Image: \`${escapeMd(droplet.image?.slug ?? '—')}\``,
-    `Status: \`${escapeMd(droplet.status ?? '—')}\``,
+    `Hostname: \`${escapeMdCode(droplet.name)}\``,
+    `IP: \`${escapeMdCode(ipv4 ?? '—')}\``,
+    `Region: \`${escapeMdCode(droplet.region?.slug ?? '—')}\``,
+    `Size: \`${escapeMdCode(droplet.size_slug ?? '—')}\``,
+    `Image: \`${escapeMdCode(droplet.image?.slug ?? '—')}\``,
+    `Status: \`${escapeMdCode(droplet.status ?? '—')}\``,
     expiresAt
-      ? `Auto-destroy: ${escapeMd(expiresAt.toISOString().slice(0, 19))} UTC`
-      : 'Auto-destroy: _disabled_',
+      ? `Auto\\-destroy: ${escapeMd(expiresAt.toISOString().slice(0, 19))} UTC`
+      : 'Auto\\-destroy: _disabled_',
   ];
   if (password) {
-    detailLines.push('', `🔐 root password: \`${escapeMd(password)}\``);
+    detailLines.push('', `🔐 root password: \`${escapeMdCode(password)}\``);
     detailLines.push('_Simpan password ini — bot tidak akan menampilkannya lagi\\._');
   }
 
@@ -657,7 +657,7 @@ export function setupCreateVps(bot) {
     if (!account) return;
     await ctx.answerCbQuery('Membuat droplet…');
     try {
-      ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => {});
+      ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => { });
     } catch {
       /* ignore */
     }
@@ -687,7 +687,7 @@ export function setupCreateVps(bot) {
         return;
       }
       flow.selection.security.password = text;
-      ctx.deleteMessage(ctx.message.message_id).catch(() => {});
+      ctx.deleteMessage(ctx.message.message_id).catch(() => { });
       const account = await activeAccount(ctx);
       await ctx.reply('Password tersimpan ✓');
       await showSecurity(ctx, account, flow.page);

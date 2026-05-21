@@ -5,7 +5,12 @@ import { Droplet } from '../models/Droplet.js';
 import { clientFor, getAccount } from '../services/accountService.js';
 import { decrypt } from '../services/crypto.js';
 import { pack } from '../utils/callbacks.js';
-import { escapeMd } from '../utils/format.js';
+import {
+  escapeMd,
+  formatIndoDate,
+  getRemainingTimeText,
+  formatRegionName,
+} from '../utils/format.js';
 import { chunk } from '../utils/keyboards.js';
 
 import { renderDashboard } from './dashboard.js';
@@ -68,7 +73,15 @@ async function renderList(ctx, account, page = 0) {
   if (nav.length) rows.push(nav);
   rows.push([Markup.button.callback('⬅️ Dashboard', pack('acct', 'open', String(account._id)))]);
 
-  await sendOrEdit(ctx, `*Droplet di ${escapeMd(account.label)}*`, Markup.inlineKeyboard(rows));
+  const emailText = account.doEmail ?? account.label;
+  const listText = [
+    `*Droplet di ${escapeMd(emailText)}*`,
+    '',
+    `Total: *${droplets.length}* VPS`,
+    'Silakan pilih salah satu VPS di bawah untuk melakukan manajemen:',
+  ].join('\n');
+
+  await sendOrEdit(ctx, listText, Markup.inlineKeyboard(rows));
 }
 
 async function renderDroplet(ctx, account, dropletId) {
@@ -85,40 +98,85 @@ async function renderDroplet(ctx, account, dropletId) {
 
   const stored = await Droplet.findOne({ accountId: account._id, dropletId }).lean();
   const ipv4 = droplet.networks?.v4?.find((n) => n.type === 'public')?.ip_address;
+  const statusEmoji =
+    droplet.status === 'active'
+      ? '🟢 Aktif'
+      : droplet.status === 'off'
+        ? '🔴 Nonaktif (Power Off)'
+        : `⚪️ ${droplet.status}`;
+
+  const createdDate = new Date(droplet.created_at);
+  const createdStr = formatIndoDate(createdDate);
+
   const lines = [
-    `*${escapeMd(droplet.name)}*`,
+    `*Detail VPS:* ${escapeMd(droplet.name)}`,
+    `*Status:* ${escapeMd(statusEmoji)}`,
     '',
-    `Status: \`${escapeMd(droplet.status)}\``,
-    `IP: \`${escapeMd(ipv4 ?? '—')}\``,
-    `Region: \`${escapeMd(droplet.region?.slug ?? '—')}\``,
-    `Size: \`${escapeMd(droplet.size_slug ?? '—')}\``,
-    `Image: \`${escapeMd(droplet.image?.slug ?? '—')}\``,
-    `Created: \`${escapeMd(new Date(droplet.created_at).toISOString().slice(0, 19))}\``,
+    `💻 *Sistem & Jaringan*`,
+    `• *IP Address:* \`${escapeMd(ipv4 ?? '—')}\``,
+    `• *Region:* ${escapeMd(formatRegionName(droplet.region?.slug))}`,
+    `• *OS Image:* ${escapeMd(droplet.image?.name ?? droplet.image?.slug ?? '—')}`,
+    `• *Spesifikasi:* ${escapeMd(`${droplet.vcpus} vCPU | ${Math.round(droplet.memory / 1024)} GB RAM | ${droplet.disk} GB Disk`)}`,
+    '',
+    `⏳ *Masa Aktif*`,
+    `• *Dibuat:* ${escapeMd(createdStr)}`,
   ];
+
   if (stored?.expiresAt) {
-    lines.push(`Expires: \`${escapeMd(new Date(stored.expiresAt).toISOString().slice(0, 19))}\``);
+    const expiresDate = new Date(stored.expiresAt);
+    const expiresStr = formatIndoDate(expiresDate);
+    const remainingText = getRemainingTimeText(stored.expiresAt);
+    lines.push(
+      `• *Kedaluwarsa:* ${escapeMd(expiresStr)}`,
+      `• *Sisa Waktu:* ${escapeMd(remainingText)}`,
+    );
+  } else {
+    lines.push(
+      `• *Kedaluwarsa:* ${escapeMd('Tanpa batas')}`,
+      `• *Sisa Waktu:* ${escapeMd('Selamanya')}`,
+    );
   }
+
   if (stored?.rootPasswordEnc) {
-    lines.push('🔐 Root password tersimpan (gunakan tombol *Show password*).');
+    lines.push(
+      '',
+      '🔐 *Keamanan:* Password root tersimpan (gunakan tombol di bawah untuk melihat).',
+    );
   }
+
+  const isPowerOn = droplet.status === 'active';
+  const powerButton = isPowerOn
+    ? Markup.button.callback('📴 Power off', pack('vps', 'a', 'off', String(droplet.id)))
+    : Markup.button.callback('⚡️ Power on', pack('vps', 'a', 'on', String(droplet.id)));
 
   const kb = Markup.inlineKeyboard([
     [
       Markup.button.callback('🔁 Reboot', pack('vps', 'a', 'reboot', String(droplet.id))),
-      Markup.button.callback('⏻ Power off', pack('vps', 'a', 'off', String(droplet.id))),
-      Markup.button.callback('⚡️ Power on', pack('vps', 'a', 'on', String(droplet.id))),
+      powerButton,
     ],
     [
       Markup.button.callback(
         '🔄 Refresh',
         pack('vps', 'show', String(account._id), String(droplet.id)),
       ),
+      Markup.button.callback('♻️ Rebuild', pack('vps', 'reb_start', String(droplet.id))),
+    ],
+    [
+      Markup.button.callback(
+        '📅 Perpanjang Masa Aktif',
+        pack('vps', 'extend_start', String(droplet.id)),
+      ),
       ...(stored?.rootPasswordEnc
-        ? [Markup.button.callback('🔐 Show password', pack('vps', 'pwd', String(droplet.id)))]
+        ? [Markup.button.callback('🔐 Show Password', pack('vps', 'pwd', String(droplet.id)))]
         : []),
     ],
-    [Markup.button.callback('💣 Destroy', pack('vps', 'a', 'destroy', String(droplet.id)))],
-    [Markup.button.callback('⬅️ Back', pack('vps', 'list', String(account._id)))],
+    [
+      Markup.button.callback(
+        '💣 Hapus VPS (Destroy)',
+        pack('vps', 'a', 'destroy', String(droplet.id)),
+      ),
+    ],
+    [Markup.button.callback('⬅️ Kembali', pack('vps', 'list', String(account._id)))],
   ]);
 
   await sendOrEdit(ctx, lines.join('\n'), kb);
@@ -135,6 +193,56 @@ async function sendOrEdit(ctx, text, kb) {
     }
   }
   await ctx.reply(text, opts);
+}
+
+async function showRebuildImages(ctx, account, dropletId, page = 0) {
+  const flow = ctx.session.rebuild;
+  if (!flow.options?.distros) {
+    const client = clientFor(account);
+    const { images } = await client.distributionImages();
+    const filtered = images.map((i) => ({
+      slug: i.slug,
+      name: i.name,
+      distribution: i.distribution,
+    }));
+    filtered.sort((a, b) => (b.slug ?? '').localeCompare(a.slug ?? ''));
+    flow.options = { distros: filtered };
+  }
+
+  const all = flow.options.distros;
+  const { slice, page: safePage, totalPages } = paginate(all, page);
+
+  const rows = chunk(
+    slice.map((img, idx) => {
+      const label = `${img.distribution ?? ''} · ${img.name ?? img.slug}`.slice(0, 50);
+      return Markup.button.callback(
+        label,
+        pack('vps', 'reb_do', String(dropletId), String(safePage * PER_PAGE + idx)),
+      );
+    }),
+    1,
+  );
+
+  if (totalPages > 1) {
+    rows.push([
+      Markup.button.callback(
+        safePage > 0 ? '« Prev' : '·',
+        safePage > 0 ? pack('vps', 'rebpg', String(dropletId), safePage - 1) : 'noop',
+      ),
+      Markup.button.callback(`${safePage + 1}/${totalPages}`, 'noop'),
+      Markup.button.callback(
+        safePage < totalPages - 1 ? 'Next »' : '·',
+        safePage < totalPages - 1 ? pack('vps', 'rebpg', String(dropletId), safePage + 1) : 'noop',
+      ),
+    ]);
+  }
+
+  rows.push([
+    Markup.button.callback('❌ Batal', pack('vps', 'show', String(account._id), String(dropletId))),
+  ]);
+
+  const text = `*♻️ Rebuild VPS*\n\nOS saat ini: \`${escapeMd(flow.currentOs)}\`\n\nPilih OS baru untuk di\\-install ulang \\(semua data lama akan terhapus\\!\\):`;
+  await sendOrEdit(ctx, text, Markup.inlineKeyboard(rows));
 }
 
 export function setupManageVps(bot) {
@@ -234,5 +342,152 @@ export function setupManageVps(bot) {
     } catch (err) {
       await ctx.answerCbQuery(`Gagal: ${err.message}`);
     }
+  });
+
+  bot.action(/^vps:reb_start:(\d+)$/, async (ctx) => {
+    const dropletId = Number(ctx.match[1]);
+    const accountId = ctx.session.activeAccountId;
+    const account = accountId ? await getAccount(ctx.from.id, accountId) : null;
+    if (!account) return ctx.answerCbQuery('Account not found');
+
+    await ctx.answerCbQuery('Memuat daftar OS...');
+
+    try {
+      const client = clientFor(account);
+      const { droplet } = await client.getDroplet(dropletId);
+      ctx.session.rebuild = {
+        dropletId,
+        currentOs: droplet.image?.name || droplet.image?.slug || 'Unknown',
+        options: {},
+      };
+      await showRebuildImages(ctx, account, dropletId, 0);
+    } catch (err) {
+      await ctx.answerCbQuery(`Gagal memuat VPS: ${err.message}`);
+    }
+  });
+
+  bot.action(/^vps:rebpg:(\d+):(\d+)$/, async (ctx) => {
+    const dropletId = Number(ctx.match[1]);
+    const page = Number(ctx.match[2]);
+    const accountId = ctx.session.activeAccountId;
+    const account = accountId ? await getAccount(ctx.from.id, accountId) : null;
+    if (!account) return;
+    if (!ctx.session.rebuild) return ctx.answerCbQuery('Session expired');
+    await ctx.answerCbQuery();
+    await showRebuildImages(ctx, account, dropletId, page);
+  });
+
+  bot.action(/^vps:reb_do:(\d+):(\d+)$/, async (ctx) => {
+    const dropletId = Number(ctx.match[1]);
+    const index = Number(ctx.match[2]);
+    const accountId = ctx.session.activeAccountId;
+    const account = accountId ? await getAccount(ctx.from.id, accountId) : null;
+    if (!account) return ctx.answerCbQuery('Account not found');
+    if (!ctx.session.rebuild || !ctx.session.rebuild.options?.distros) {
+      return ctx.answerCbQuery('Session expired');
+    }
+
+    const image = ctx.session.rebuild.options.distros[index];
+    if (!image) return ctx.answerCbQuery('Image not found');
+
+    await ctx.answerCbQuery('Memulai rebuild...');
+    try {
+      const client = clientFor(account);
+      await client.dropletAction(dropletId, { type: 'rebuild', image: image.slug });
+      await ctx.reply(
+        `♻️ VPS sedang di\\-rebuild dengan OS *${escapeMd(image.name)}*\\.\nProses ini memakan waktu 1\\-2 menit\\.`,
+        { parse_mode: 'MarkdownV2' },
+      );
+      ctx.session.rebuild = null;
+      await renderDroplet(ctx, account, dropletId);
+    } catch (err) {
+      await ctx.reply(`❌ Gagal rebuild: ${err.message}`);
+    }
+  });
+
+  bot.action(/^vps:extend_start:(\d+)$/, async (ctx) => {
+    const dropletId = Number(ctx.match[1]);
+    const accountId = ctx.session.activeAccountId;
+    const account = accountId ? await getAccount(ctx.from.id, accountId) : null;
+    if (!account) return ctx.answerCbQuery('Account not found');
+
+    ctx.session.extendVps = { dropletId, accountId: String(account._id) };
+    await ctx.answerCbQuery();
+    await ctx.reply(
+      'Berapa hari ingin memperpanjang masa aktif VPS ini? Ketik angka hari (misal: 30), atau kirim `0` untuk *tanpa batas*.',
+      { parse_mode: 'Markdown' },
+    );
+  });
+
+  bot.on('text', async (ctx, next) => {
+    const flow = ctx.session?.extendVps;
+    if (!flow) return next();
+    const text = (ctx.message.text || '').trim();
+    if (text.startsWith('/')) return next();
+
+    const n = Number(text);
+    if (!Number.isFinite(n) || n < 0 || n > 365) {
+      await ctx.reply('Masukkan angka antara 0 dan 365.');
+      return;
+    }
+
+    const dropletId = flow.dropletId;
+    const account = await getAccount(ctx.from.id, flow.accountId);
+    if (!account) {
+      ctx.session.extendVps = null;
+      await ctx.reply('Akun tidak ditemukan.');
+      return;
+    }
+
+    const stored = await Droplet.findOne({ accountId: account._id, dropletId });
+    if (!stored) {
+      ctx.session.extendVps = null;
+      await ctx.reply('VPS tidak ditemukan di database bot.');
+      return;
+    }
+
+    let newExpiresAt = null;
+    if (n > 0) {
+      const currentExpiry = stored.expiresAt ? new Date(stored.expiresAt) : new Date();
+      const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+      newExpiresAt = new Date(baseDate.getTime() + n * 86_400_000);
+    }
+
+    await Droplet.updateOne(
+      { _id: stored._id },
+      {
+        $set: {
+          expiresAt: newExpiresAt,
+          autoDestroy: n > 0,
+          notifiedExpiringSoon: false,
+          notifiedExpired: false,
+        },
+      },
+    ).exec();
+
+    ctx.session.extendVps = null;
+
+    let powerOnSuccess = false;
+    try {
+      const client = clientFor(account);
+      await client.dropletAction(dropletId, { type: 'power_on' });
+      powerOnSuccess = true;
+    } catch (err) {
+      logger.warn({ err: err.message, dropletId }, 'failed to power on droplet after extension');
+    }
+
+    const expiryText = newExpiresAt
+      ? `diperpanjang hingga ${newExpiresAt.toISOString().replace('T', ' ').slice(0, 19)} UTC`
+      : 'diubah menjadi tanpa batas aktif';
+
+    let successMsg = `✅ VPS *${escapeMd(stored.name)}* berhasil ${escapeMd(expiryText)}\\.`;
+    if (powerOnSuccess) {
+      successMsg += `\n⚡️ VPS juga telah otomatis dinyalakan kembali\\.`;
+    }
+
+    await ctx.reply(successMsg, { parse_mode: 'MarkdownV2' });
+
+    // Show the droplet menu again
+    await renderDroplet(ctx, account, dropletId);
   });
 }
