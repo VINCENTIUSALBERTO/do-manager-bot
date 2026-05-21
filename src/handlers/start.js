@@ -82,7 +82,7 @@ export function setupStart(bot) {
       Markup.button.callback(a.label, pack('acct', 'open', String(a._id))),
     );
     buttons.push(Markup.button.callback('➕ Tambah Akun', pack('acct', 'add')));
-    
+
     await ctx.reply(
       'Pilih akun DigitalOcean yang ingin kamu kelola:',
       Markup.inlineKeyboard(buttons, { columns: 2 }),

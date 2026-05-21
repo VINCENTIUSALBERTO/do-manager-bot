@@ -22,7 +22,7 @@ Bot ini dirancang untuk penggunaan multi-user dengan pembatasan limit akun, masa
 - **Power Control Dinamis & Masa Aktif:**
   - Status aktif/mati otomatis diwakili oleh satu tombol dinamis (`📴 Power off` / `⚡️ Power on`).
   - Info VPS lengkap berbahasa Indonesia dengan WIB timezone, bendera negara region, dan masa aktif mendetail.
-  - **Grace Period Expiry:** VPS yang kedaluwarsa **tidak langsung didelete**, melainkan di-*power off* secara otomatis dan diberikan masa tenggang **7 hari** untuk diperpanjang. Jika tidak diperpanjang dalam 7 hari, VPS akan dihapus otomatis dari DigitalOcean.
+  - **Grace Period Expiry:** VPS yang kedaluwarsa **tidak langsung didelete**, melainkan di-_power off_ secara otomatis dan diberikan masa tenggang **7 hari** untuk diperpanjang. Jika tidak diperpanjang dalam 7 hari, VPS akan dihapus otomatis dari DigitalOcean.
 - **Anti-Spam / Rate-Limiter:** Membatasi input pengguna maksimal 3 pesan dalam 3 detik untuk melindungi bot dari spamming.
 - **Keamanan Tinggi:**
   - Token API disimpan dalam enkripsi **AES-256-GCM** sebelum masuk database.
@@ -68,30 +68,30 @@ docker compose up -d --build
 
 ## Environment Variables
 
-| Variable | Wajib | Keterangan |
-| --- | --- | --- |
-| `BOT_TOKEN` | Ya | Token Telegram Bot dari BotFather |
-| `MONGODB_URI` | Ya | URI koneksi MongoDB |
-| `ENCRYPTION_KEY` | Ya | 32-byte hex (64 karakter) untuk enkripsi token DO |
-| `ADMIN_USER_IDS` | Tidak | Comma-separated list ID Telegram Admin yang didaftarkan (Pangkat Admin) |
-| `ALLOWED_USER_IDS`| Tidak | Whitelist user yang boleh menggunakan bot. Kosongkan untuk mode publik |
-| `LOG_LEVEL` | Tidak | Level logging Pino (`info` secara default) |
-| `NODE_ENV` | Tidak | Set `production` untuk menonaktifkan pretty logging |
-| `EXPIRY_CRON` | Tidak | Jadwal cron pengecekan VPS expired (`*/1 * * * *` secara default) |
+| Variable           | Wajib | Keterangan                                                              |
+| ------------------ | ----- | ----------------------------------------------------------------------- |
+| `BOT_TOKEN`        | Ya    | Token Telegram Bot dari BotFather                                       |
+| `MONGODB_URI`      | Ya    | URI koneksi MongoDB                                                     |
+| `ENCRYPTION_KEY`   | Ya    | 32-byte hex (64 karakter) untuk enkripsi token DO                       |
+| `ADMIN_USER_IDS`   | Tidak | Comma-separated list ID Telegram Admin yang didaftarkan (Pangkat Admin) |
+| `ALLOWED_USER_IDS` | Tidak | Whitelist user yang boleh menggunakan bot. Kosongkan untuk mode publik  |
+| `LOG_LEVEL`        | Tidak | Level logging Pino (`info` secara default)                              |
+| `NODE_ENV`         | Tidak | Set `production` untuk menonaktifkan pretty logging                     |
+| `EXPIRY_CRON`      | Tidak | Jadwal cron pengecekan VPS expired (`*/1 * * * *` secara default)       |
 
 ---
 
 ## Daftar Perintah (Commands)
 
-| Command | Akses | Fungsi |
-| --- | --- | --- |
-| `/start` | Semua | Membuka Dashboard Utama / registrasi awal |
-| `/accounts` | Semua | Pindah atau kelola akun DigitalOcean yang terhubung |
-| `/cancel` | Semua | Membatalkan alur/flow aktif saat ini |
-| `/help` | Semua | Menampilkan panduan & tutorial bot lengkap |
-| `/admin` | Admin | Membuka Panel Dashboard Admin |
-| `/premium <id>` | Admin | Mengubah tipe akun user menjadi Premium |
-| `/standard <id>`| Admin | Mengubah tipe akun user menjadi Standard |
+| Command          | Akses | Fungsi                                              |
+| ---------------- | ----- | --------------------------------------------------- |
+| `/start`         | Semua | Membuka Dashboard Utama / registrasi awal           |
+| `/accounts`      | Semua | Pindah atau kelola akun DigitalOcean yang terhubung |
+| `/cancel`        | Semua | Membatalkan alur/flow aktif saat ini                |
+| `/help`          | Semua | Menampilkan panduan & tutorial bot lengkap          |
+| `/admin`         | Admin | Membuka Panel Dashboard Admin                       |
+| `/premium <id>`  | Admin | Mengubah tipe akun user menjadi Premium             |
+| `/standard <id>` | Admin | Mengubah tipe akun user menjadi Standard            |
 
 ---
 

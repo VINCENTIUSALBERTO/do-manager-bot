@@ -351,8 +351,8 @@ function buildConfirmText(flow, sizeInfo) {
     `${escapeMd('Size:')} \`${escapeMdCode(flow.selection.size)}\``,
     sizeInfo
       ? escapeMd(
-        `Spec: ${sizeInfo.vcpus} vCPU · ${Math.round(sizeInfo.memory / 1024)} GB RAM · ${sizeInfo.disk} GB disk`,
-      )
+          `Spec: ${sizeInfo.vcpus} vCPU · ${Math.round(sizeInfo.memory / 1024)} GB RAM · ${sizeInfo.disk} GB disk`,
+        )
       : '',
     sizeInfo ? escapeMd(`Harga: $${sizeInfo.priceMonthly}/bulan`) : '',
     escapeMd(`Masa aktif: ${lifetimeText}`),
@@ -439,7 +439,7 @@ async function commitCreate(ctx, account) {
         undefined,
         `❌ Gagal membuat VPS: ${err.message}`,
       )
-      .catch(() => { });
+      .catch(() => {});
     return;
   }
 
@@ -462,7 +462,7 @@ async function commitCreate(ctx, account) {
     autoDestroy: Boolean(expiresAt),
   });
 
-  await ctx.telegram.deleteMessage(ctx.chat.id, waiting.message_id).catch(() => { });
+  await ctx.telegram.deleteMessage(ctx.chat.id, waiting.message_id).catch(() => {});
 
   const detailLines = [
     '*✅ VPS berhasil dibuat\\!*',
@@ -657,7 +657,7 @@ export function setupCreateVps(bot) {
     if (!account) return;
     await ctx.answerCbQuery('Membuat droplet…');
     try {
-      ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => { });
+      ctx.editMessageReplyMarkup({ inline_keyboard: [] }).catch(() => {});
     } catch {
       /* ignore */
     }
@@ -687,7 +687,7 @@ export function setupCreateVps(bot) {
         return;
       }
       flow.selection.security.password = text;
-      ctx.deleteMessage(ctx.message.message_id).catch(() => { });
+      ctx.deleteMessage(ctx.message.message_id).catch(() => {});
       const account = await activeAccount(ctx);
       await ctx.reply('Password tersimpan ✓');
       await showSecurity(ctx, account, flow.page);
