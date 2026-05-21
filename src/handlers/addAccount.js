@@ -19,6 +19,20 @@ export function setupAddAccount(bot) {
     // in Telegram chat history.
     ctx.deleteMessage(ctx.message.message_id).catch(() => {});
 
+    const user = ctx.state.user;
+    const accounts = await listAccounts(ctx.from.id);
+    const limit =
+      user.accountLimit ?? (user.role === 'admin' ? 9999 : user.role === 'premium' ? 10 : 1);
+    if (accounts.length >= limit) {
+      ctx.session.flow = null;
+      ctx.session.tokenLabel = null;
+      await ctx.reply(
+        `⚠️ Anda telah mencapai batas maksimal penambahan akun DigitalOcean untuk tipe akun *${user.role.toUpperCase()}* (${accounts.length}/${limit} akun).`,
+        { parse_mode: 'Markdown' },
+      );
+      return;
+    }
+
     if (!TOKEN_REGEX.test(token)) {
       await ctx.reply(
         'That does not look like a DigitalOcean personal access token. It usually starts with `dop_v1_` and contains 60+ characters. Please try again or use /cancel.',

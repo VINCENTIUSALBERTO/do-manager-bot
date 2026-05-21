@@ -20,6 +20,17 @@ const ConfigSchema = z.object({
         .map((s) => Number(s))
         .filter((n) => Number.isFinite(n)),
     ),
+  ADMIN_USER_IDS: z
+    .string()
+    .optional()
+    .transform((v) =>
+      (v ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .map((s) => Number(s))
+        .filter((n) => Number.isFinite(n)),
+    ),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent']).default('info'),
   NODE_ENV: z.string().default('development'),
   EXPIRY_CRON: z.string().default('*/1 * * * *'),

@@ -2,11 +2,13 @@ import { Telegraf } from 'telegraf';
 
 import { config } from './config.js';
 import { setupAddAccount } from './handlers/addAccount.js';
+import { setupAdmin } from './handlers/admin.js';
 import { setupCreateVps } from './handlers/createVps.js';
 import { setupDashboard } from './handlers/dashboard.js';
 import { setupManageVps } from './handlers/manageVps.js';
 import { setupStart } from './handlers/start.js';
 import { logger } from './logger.js';
+import { antiSpamMiddleware } from './middleware/antiSpam.js';
 import { authMiddleware } from './middleware/auth.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { mongoSession } from './services/session.js';
@@ -31,6 +33,7 @@ export function createBot() {
     );
   });
 
+  bot.use(antiSpamMiddleware());
   bot.use(mongoSession());
   bot.use(authMiddleware());
 
@@ -38,6 +41,7 @@ export function createBot() {
   setupDashboard(bot);
   setupCreateVps(bot);
   setupManageVps(bot);
+  setupAdmin(bot);
   setupAddAccount(bot); // text handler — must be registered last so it runs after others
 
   return bot;

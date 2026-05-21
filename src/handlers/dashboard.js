@@ -107,11 +107,23 @@ export function setupDashboard(bot) {
   });
 
   bot.action('acct:add', async (ctx) => {
+    const user = ctx.state.user;
+    const accounts = await listAccounts(ctx.from.id);
+    const limit =
+      user.accountLimit ?? (user.role === 'admin' ? 9999 : user.role === 'premium' ? 10 : 1);
+    if (accounts.length >= limit) {
+      await ctx.answerCbQuery('Limit akun tercapai!', { show_alert: true });
+      await ctx.reply(
+        `⚠️ Anda telah mencapai batas maksimal penambahan akun DigitalOcean untuk tipe akun *${user.role.toUpperCase()}* (${accounts.length}/${limit} akun).\nHubungi Admin untuk upgrade limit Anda.`,
+        { parse_mode: 'Markdown' },
+      );
+      return;
+    }
     ctx.session.flow = 'awaiting_token';
     ctx.session.tokenLabel = null;
     await ctx.answerCbQuery();
     await ctx.reply(
-      'Send me the DigitalOcean Personal Access Token for the new account. Send /cancel to abort.',
+      'Kirimkan Personal Access Token DigitalOcean untuk akun baru Anda. Kirim /cancel untuk membatalkan.',
     );
   });
 

@@ -7,6 +7,9 @@ const UserSchema = new mongoose.Schema(
     firstName: { type: String },
     languageCode: { type: String },
     activeAccountId: { type: mongoose.Schema.Types.ObjectId, ref: 'Account' },
+    role: { type: String, enum: ['standard', 'premium', 'admin'], default: 'standard' },
+    accountLimit: { type: Number },
+    isBanned: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

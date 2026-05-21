@@ -5,25 +5,20 @@ import { pack } from '../utils/callbacks.js';
 
 import { renderDashboard } from './dashboard.js';
 
-const API_KEY_TUTORIAL = `Welcome to *DO Manager Bot* — your control panel for DigitalOcean from Telegram\\.
+const API_KEY_TUTORIAL = `Selamat datang di *DO Manager Bot* — panel kontrol DigitalOcean Anda melalui Telegram\\.
 
-To get started I need a *Personal Access Token* \\(PAT\\) from your DigitalOcean account\\. Follow these steps:
+Untuk memulai, saya membutuhkan *Personal Access Token* \\(PAT\\) dari akun DigitalOcean Anda\\. Ikuti langkah\\-langkah berikut:
 
-1\\. Sign in at https://cloud\\.digitalocean\\.com/account/api/tokens
-2\\. Click *Generate New Token*
-3\\. Give it a name, e\\.g\\. \`telegram-bot\`
-4\\. Pick *Custom Scopes* and tick at least these scopes:
-   • \`account:read\`
-   • \`droplet:create\` \\+ \`droplet:read\` \\+ \`droplet:update\` \\+ \`droplet:delete\`
-   • \`ssh_key:read\` \\+ \`ssh_key:create\`
-   • \`image:read\`
-   • \`region:read\`
-   • \`size:read\`
-   • \`billing:read\`
-5\\. Click *Generate Token* and copy the value shown _once_ — DigitalOcean will not show it again\\.
-6\\. Send the token to this chat as the next message\\.
+1\\. Masuk ke akun Anda di https://cloud\\.digitalocean\\.com/account/api/tokens
+2\\. Klik *Generate New Token* lalu pilih opsi *Personal access token*\\.
+3\\. Berikan nama token pada kolom *Token name*, misalnya: \`telegram\\-bot\`
+4\\. Tentukan batas waktu kedaluwarsa \\(*Expiration*\\) sesuai keinginan Anda\\.
+5\\. Pada bagian *Select Scopes*, pastikan Anda mencentang akses *Write* \\(akses *Read* akan otomatis tercentang bersamaan dengan Write\\)\\.
+6\\. Klik tombol *Generate Token*\\.
+7\\. Salin token yang muncul \\(token hanya ditampilkan _sekali saja_ oleh DigitalOcean\\)\\.
+8\\. Kirim/Paste token tersebut ke chat ini sebagai pesan berikutnya\\.
 
-🔐 _Your token is encrypted with AES\\-256\\-GCM before it touches the database — only this bot can read it back\\._`;
+🔐 _Token Anda dienkripsi menggunakan AES\\-256\\-GCM sebelum disimpan ke database — hanya bot ini yang dapat membacanya kembali\\._`;
 
 const HELP_TUTORIAL = `*📖 Panduan & Tutorial Penggunaan Bot*
 
@@ -86,7 +81,8 @@ export function setupStart(bot) {
     const buttons = accounts.map((a) =>
       Markup.button.callback(a.label, pack('acct', 'open', String(a._id))),
     );
-    buttons.push(Markup.button.callback('➕ Add Account', pack('acct', 'add')));
+    buttons.push(Markup.button.callback('➕ Tambah Akun', pack('acct', 'add')));
+    
     await ctx.reply(
       'Pilih akun DigitalOcean yang ingin kamu kelola:',
       Markup.inlineKeyboard(buttons, { columns: 2 }),
@@ -140,6 +136,6 @@ export function setupStart(bot) {
 
   bot.command('cancel', async (ctx) => {
     ctx.session = {};
-    await ctx.reply('Flow cancelled. Send /start to open the dashboard.');
+    await ctx.reply('Proses dibatalkan. Kirim /start untuk membuka dashboard utama.');
   });
 }
