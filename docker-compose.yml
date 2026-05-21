@@ -1,0 +1,15 @@
+services:
+  bot:
+    build: .
+    image: do-manager-bot:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+    stop_grace_period: 15s
+    healthcheck:
+      test: ['CMD-SHELL', 'node -e "process.exit(0)"']
+      interval: 60s
+      timeout: 10s
+      retries: 3
